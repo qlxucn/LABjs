@@ -16,7 +16,12 @@
 		
 		// stateless variables used across all $LAB instances
 		root_page = /^[^?#]*\//.exec(location.href)[0],
-		root_domain = /^\w+\:\/\/\/?[^\/]+/.exec(root_page)[0],
+
+		is_protocol_chrome_ext = /^chrome-extension:\/\//.test(root_page),
+
+		// Fix issue of loading scripts in chrome-extension
+		root_domain = is_protocol_chrome_ext ? "" : /^\w+\:\/\/\/?[^\/]+/.exec(root_page)[0],
+
 		append_to = document.head || document.getElementsByTagName("head"),
 		
 		// inferences... ick, but still necessary
@@ -251,6 +256,13 @@
 	
 		// process the script request setup
 		function do_script(chain_opts,script_obj,chain_group,preload_this_script) {
+			/**
+			* If under chrome-extension protocol, then change "//xxx" to "https://xxx" as chrome extension doesn't allow loading script from http.
+			*/
+			if (is_protocol_chrome_ext && /^\/\/[^\/]/.test(script_obj.src) ) {
+				script_obj.src = "https:" + script_obj.src;
+			}
+
 			var registry_item,
 				registry_items,
 				ready_cb = function(){ script_obj.ready_cb(script_obj,function(){ execute_preloaded_script(chain_opts,script_obj,registry_item); }); },
